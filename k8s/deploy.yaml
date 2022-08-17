@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dj-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      project: dj
+  template:
+    metadata:
+      labels:
+        project: dj
+    spec:
+      containers:
+      - name: dj-container
+        image: dj_app
+        envFrom:
+        - configMapRef:
+            name: dj-config
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 80
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dj-service
+spec:
+  selector:
+    project: dj
+  ports:
+    - name      : app-listener
+      protocol  : TCP
+      port      : 80
+      targetPort: 80
