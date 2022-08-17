@@ -32,3 +32,33 @@ $ docker-compose run web ./manage.py createsuperuser
 `ALLOWED_HOSTS` -- настройка Django со списком разрешённых адресов. Если запрос прилетит на другой адрес, то сайт ответит ошибкой 400. Можно перечислить несколько адресов через запятую, например `127.0.0.1,192.168.0.1,site.test`. [Документация Django](https://docs.djangoproject.com/en/3.2/ref/settings/#allowed-hosts).
 
 `DATABASE_URL` -- адрес для подключения к базе данных PostgreSQL. Другие СУБД сайт не поддерживает. [Формат записи](https://github.com/jacobian/dj-database-url#url-schema).
+
+## Как запустить в Minikube
+1. Установите и запустите [Minikube](https://kubernetes.io/ru/docs/tasks/tools/install-minikube/). 
+2. Постройте и загрузите образ в Minikube:
+```shell-session
+$ minikube image build -t dj_app ./backend_main_django
+```
+3. Разверните PostgreSQL в кластере ([пример](https://artifacthub.io/packages/helm/bitnami/postgresql)). Создайте базу данных, пользователя ([пример](https://medium.com/coding-blocks/creating-user-database-and-adding-access-on-postgresql-8bfcd2f4a91e)).
+4. Создайте в директории `kubernetes` конфигурационный файл `config.yaml` c содержимым:
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dj-config
+data:
+  DATABASE_URL: {укажите свое значение}
+  SECRET_KEY: {укажите свое значение}
+  DEBUG: 'True'
+  ALLOWED_HOSTS: star-burger.test
+```
+5. Пропишите на своей машине в `/etc/hosts` (для linux) домен `star-burger.test`, сопоставить с IP виртуальной машины (узнать ip c помощью команды `minikube ip`).
+6. Запустите миграцию:
+```shell-session
+$ kubectl apply -f k8s/jobs/migrate-job.yaml
+```
+7. Запустите сайт:
+```shell-session
+$ kubectl apply -f k8s
+```
+8. Перейдите по адресу http://star-burger.test/
